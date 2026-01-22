@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Statistiques Enseignants Bénévoles</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 25px 0;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        .upload-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .upload-area {
+            border: 3px dashed #3498db;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            background-color: #f8fafc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            background-color: #e8f4fc;
+            border-color: #2980b9;
+        }
+        
+        .upload-area i {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .upload-area h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .upload-area p {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        
+        .upload-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .upload-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            font-size: 28px;
+        }
+        
+        .stat-1 .stat-icon { background-color: #e8f6f3; color: #1abc9c; }
+        .stat-2 .stat-icon { background-color: #fef9e7; color: #f39c12; }
+        .stat-3 .stat-icon { background-color: #ebf5fb; color: #3498db; }
+        .stat-4 .stat-icon { background-color: #f4ecf7; color: #8e44ad; }
+        
+        .stat-info h3 {
+            font-size: 32px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-info p {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .chart-title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .chart-title i {
+            margin-right: 10px;
+            color: #3498db;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .data-table-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        
+        .filter-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        select {
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            color: #2c3e50;
+            font-weight: 600;
+            border-bottom: 2px solid #eee;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            display: none;
+        }
+        
+        .no-data i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #bdc3c7;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div>
+                    <h1><i class="fas fa-chart-line"></i> Dashboard - Enseignants Bénévoles</h1>
+                    <p class="subtitle">Statistiques des enseignants bénévoles par établissement et par mois</p>
+                </div>
+                <div>
+                    <p id="current-date">Chargement des données...</p>
+                </div>
+            </div>
+        </header>
+        
+        <section class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <i class="fas fa-file-excel"></i>
+                <h3>Importer votre fichier Excel</h3>
+                <p>Glissez-déposez votre fichier Excel ici ou cliquez pour parcourir</p>
+                <p><strong>Format attendu:</strong> DDR, Heures, Grade, Date début, Date fin, Nombre, Taux, Montant Brut, Retenue, Montant Net, CIN, Nom, Prénom, Mode de Paiement, Type référence règlement, Compte bancaire, Objet, Nom École</p>
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Choisir un fichier</button>
+                <input type="file" id="fileInput" accept=".xlsx, .xls">
+            </div>
+        </section>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Traitement du fichier Excel en cours...</p>
+        </div>
+        
+        <div class="no-data" id="noData">
+            <i class="fas fa-database"></i>
+            <h3>Aucune donnée disponible</h3>
+            <p>Veuillez importer un fichier Excel pour afficher les statistiques</p>
+        </div>
+        
+        <div id="dashboardContent" style="display: none;">
+            <div class="stats-container">
+                <div class="stat-card stat-1">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalTeachers">0</h3>
+                        <p>Enseignants bénévoles</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-2">
+                    <div class="stat-icon">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalSchools">0</h3>
+                        <p>Établissements</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-3">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalHours">0</h3>
+                        <p>Heures réalisées</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-4">
+                    <div class="stat-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalAmount">0</h3>
+                        <p>Montant total (DH)</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Heures par établissement (Top 10)</h3>
+                    <div class="chart-container">
+                        <canvas id="schoolHoursChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Répartition par mode de paiement</h3>
+                    <div class="chart-container">
+                        <canvas id="paymentModeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="data-table-container">
+                <div class="filter-section">
+                    <h3><i class="fas fa-table"></i> Données détaillées</h3>
+                    <div class="filter-controls">
+                        <select id="schoolFilter">
+                            <option value="all">Tous les établissements</option>
+                        </select>
+                        <select id="monthFilter">
+                            <option value="all">Tous les mois</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>DDR</th>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Heures</th>
+                            <th>Grade</th>
+                            <th>Établissement</th>
+                            <th>Montant Brut</th>
+                            <th>Date début</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Les données seront insérées ici -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Dashboard des enseignants bénévoles - Généré à partir de fichiers Excel</p>
+            <p>© 2023 - Ministère de l'Éducation</p>
+        </footer>
+    </div>
+
+    <script>
+        // Variables globales pour stocker les données
+        let rawData = [];
+        let processedData = [];
+        let currentChart1, currentChart2;
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mettre à jour la date actuelle
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').textContent = `Données au ${now.toLocaleDateString('fr-FR', options)}`;
+            
+            // Configurer l'upload de fichier
+            const fileInput = document.getElementById('fileInput');
+            const uploadArea = document.getElementById('uploadArea');
+            
+            fileInput.addEventListener('change', handleFileUpload);
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#e8f4fc';
+                uploadArea.style.borderColor = '#2980b9';
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f8fafc';
+                uploadArea.style.borderColor = '#3498db';
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f8fafc';
+                uploadArea.style.borderColor = '#3498db';
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileUpload();
+                }
+            });
+        });
+        
+        // Gérer l'upload de fichier
+        function handleFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) return;
+            
+            const file = fileInput.files[0];
+            const fileName = file.name.toLowerCase();
+            
+            if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+                alert('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)');
+                return;
+            }
+            
+            // Afficher l'indicateur de chargement
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('noData').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'none';
+            
+            // Lire le fichier Excel
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    
+                    // Récupérer la première feuille
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convertir en JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // Traiter les données
+                    processExcelData(jsonData);
+                    
+                    // Cacher l'indicateur de chargement
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    // Afficher le dashboard
+                    document.getElementById('dashboardContent').style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Erreur lors de la lecture du fichier:', error);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('noData').style.display = 'block';
+                    alert('Erreur lors de la lecture du fichier Excel. Vérifiez le format du fichier.');
+                }
+            };
+            
+            reader.onerror = function() {
+                console.error('Erreur de lecture du fichier');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('noData').style.display = 'block';
+                alert('Erreur lors de la lecture du fichier.');
+            };
+            
+            reader.readAsBinaryString(file);
+        }
+        
+        // Traiter les données Excel
+        function processExcelData(excelData) {
+            // Réinitialiser les données
+            rawData = [];
+            processedData = [];
+            
+            // Vérifier si les données ont des en-têtes
+            if (excelData.length < 2) {
+                alert('Le fichier Excel ne contient pas suffisamment de données.');
+                return;
+            }
+            
+            // Récupérer les en-têtes (première ligne)
+            const headers = excelData[0];
+            
+            // Parcourir les lignes de données (à partir de la deuxième ligne)
+            for (let i = 1; i < excelData.length; i++) {
+                const row = excelData[i];
+                if (row.length === 0) continue; // Ignorer les lignes vides
+                
+                // Créer un objet à partir de la ligne et des en-têtes
+                const rowData = {};
+                for (let j = 0; j < headers.length; j++) {
+                    if (j < row.length) {
+                        rowData[headers[j]] = row[j];
+                    } else {
+                        rowData[headers[j]] = '';
+                    }
+                }
+                
+                // Ajouter aux données brutes
+                rawData.push(rowData);
+                
+                // Traiter et formater les données
+                const processedRow = {
+                    ddr: rowData['DDR'] || '',
+                    heures: parseFloat(rowData['عدد الساعات المنجزة']) || 0,
+                    grade: rowData['Grade'] || '',
+                    dateDebut: formatDate(rowData['Date début']) || '',
+                    dateFin: formatDate(rowData['Date fin']) || '',
+                    nombre: parseFloat(rowData['Nombre']) || 0,
+                    taux: parseFloat(rowData['Taux']) || 0,
+                    montantBrut: parseFloat(rowData['Montant brute']) || 0,
+                    retenue: parseFloat(rowData['Retenue']) || 0,
+                    montantNet: parseFloat(rowData['Montant net']) || 0,
+                    cin: rowData['CIN'] || '',
+                    nom: rowData['Nom'] || '',
+                    prenom: rowData['Prénom'] || '',
+                    modePaiement: rowData['Mode de paiement'] || '',
+                    typeReference: rowData['Type référence règlement'] || '',
+                    compteBancaire: rowData['Compte bancaire'] || '',
+                    objet: rowData['Objet'] || '',
+                    nomEcole: rowData['nom école'] || ''
+                };
+                
+                // Extraire le mois à partir de la date de début
+                if (processedRow.dateDebut) {
+                    const dateParts = processedRow.dateDebut.split('/');
+                    if (dateParts.length === 3) {
+                        processedRow.mois = `${dateParts[1]}/${dateParts[2]}`;
+                    }
+                }
+                
+                processedData.push(processedRow);
+            }
+            
+            // Mettre à jour les statistiques et les graphiques
+            updateDashboard();
+        }
+        
+        // Formater une date
+        function formatDate(dateValue) {
+            if (!dateValue) return '';
+            
+            // Si c'est déjà une chaîne au format date
+            if (typeof dateValue === 'string') {
+                // Essayer de parser différentes formats de date
+                const date = new Date(dateValue);
+                if (!isNaN(date.getTime())) {
+                    return date.toLocaleDateString('fr-FR');
+                }
+                return dateValue;
+            }
+            
+            // Si c'est un objet Date Excel (nombre de jours depuis 1900)
+            if (typeof dateValue === 'number') {
+                // Conversion depuis Excel date (nombre de jours depuis 1900)
+                const excelEpoch = new Date(1899, 11, 30);
+                const date = new Date(excelEpoch.getTime() + dateValue * 24 * 60 * 60 * 1000);
+                return date.toLocaleDateString('fr-FR');
+            }
+            
+            return '';
+        }
+        
+        // Mettre à jour le dashboard
+        function updateDashboard() {
+            // Calculer les statistiques
+            const totalTeachers = processedData.length;
+            const totalHours = processedData.reduce((sum, row) => sum + row.heures, 0);
+            const totalAmount = processedData.reduce((sum, row) => sum + row.montantBrut, 0);
+            
+            // Compter les établissements uniques
+            const uniqueSchools = [...new Set(processedData.map(row => row.nomEcole).filter(Boolean))];
+            const totalSchools = uniqueSchools.length;
+            
+            // Mettre à jour les cartes de statistiques
+            document.getElementById('totalTeachers').textContent = totalTeachers.toLocaleString('fr-FR');
+            document.getElementById('totalSchools').textContent = totalSchools.toLocaleString('fr-FR');
+            document.getElementById('totalHours').textContent = totalHours.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+            document.getElementById('totalAmount').textContent = totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            // Mettre à jour les graphiques
+            updateCharts();
+            
+            // Mettre à jour la table
+            updateTable();
+            
+            // Mettre à jour les filtres
+            updateFilters();
+        }
+        
+        // Mettre à jour les graphiques
+        function updateCharts() {
+            // 1. Graphique des heures par établissement (Top 10)
+            const schoolHours = {};
+            
+            processedData.forEach(row => {
+                if (row.nomEcole) {
+                    if (!schoolHours[row.nomEcole]) {
+                        schoolHours[row.nomEcole] = 0;
+                    }
+                    schoolHours[row.nomEcole] += row.heures;
+                }
+            });
+            
+            // Trier par heures décroissantes et prendre le top 10
+            const sortedSchools = Object.entries(schoolHours)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            const schoolNames = sortedSchools.map(item => item[0]);
+            const schoolHoursData = sortedSchools.map(item => item[1]);
+            
+            // Créer ou mettre à jour le graphique à barres
+            const ctx1 = document.getElementById('schoolHoursChart').getContext('2d');
+            
+            if (currentChart1) {
+                currentChart1.destroy();
+            }
+            
+            currentChart1 = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: schoolNames,
+                    datasets: [{
+                        label: 'Heures réalisées',
+                        data: schoolHoursData,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw.toFixed(1)} heures`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Heures'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 2. Graphique des modes de paiement
+            const paymentModes = {};
+            
+            processedData.forEach(row => {
+                if (row.modePaiement) {
+                    if (!paymentModes[row.modePaiement]) {
+                        paymentModes[row.modePaiement] = 0;
+                    }
+                    paymentModes[row.modePaiement]++;
+                }
+            });
+            
+            const paymentLabels = Object.keys(paymentModes);
+            const paymentData = Object.values(paymentModes);
+            
+            // Couleurs pour le graphique circulaire
+            const backgroundColors = [
+                'rgba(52, 152, 219, 0.7)',
+                'rgba(46, 204, 113, 0.7)',
+                'rgba(155, 89, 182, 0.7)',
+                'rgba(241, 196, 15, 0.7)',
+                'rgba(230, 126, 34, 0.7)',
+                'rgba(231, 76, 60, 0.7)'
+            ];
+            
+            // Créer ou mettre à jour le graphique circulaire
+            const ctx2 = document.getElementById('paymentModeChart').getContext('2d');
+            
+            if (currentChart2) {
+                currentChart2.destroy();
+            }
+            
+            currentChart2 = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels: paymentLabels,
+                    datasets: [{
+                        data: paymentData,
+                        backgroundColor: backgroundColors.slice(0, paymentLabels.length),
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Mettre à jour la table de données
+        function updateTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            
+            // Afficher les 50 premières lignes pour des performances
+            const displayData = processedData.slice(0, 50);
+            
+            displayData.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                tr.innerHTML = `
+                    <td>${row.ddr || ''}</td>
+                    <td>${row.nom || ''}</td>
+                    <td>${row.prenom || ''}</td>
+                    <td>${row.heures.toFixed(1)}</td>
+                    <td>${row.grade || ''}</td>
+                    <td>${row.nomEcole || ''}</td>
+                    <td>${row.montantBrut.toFixed(2)} DH</td>
+                    <td>${row.dateDebut || ''}</td>
+                `;
+                
+                tableBody.appendChild(tr);
+            });
+        }
+        
+        // Mettre à jour les filtres
+        function updateFilters() {
+            const schoolFilter = document.getElementById('schoolFilter');
+            const monthFilter = document.getElementById('monthFilter');
+            
+            // Récupérer les établissements uniques
+            const uniqueSchools = [...new Set(processedData.map(row => row.nomEcole).filter(Boolean))];
+            
+            // Récupérer les mois uniques
+            const uniqueMonths = [...new Set(processedData.map(row => row.mois).filter(Boolean))];
+            
+            // Mettre à jour le filtre des établissements
+            schoolFilter.innerHTML = '<option value="all">Tous les établissements</option>';
+            uniqueSchools.sort().forEach(school => {
+                const option = document.createElement('option');
+                option.value = school;
+                option.textContent = school;
+                schoolFilter.appendChild(option);
+            });
+            
+            // Mettre à jour le filtre des mois
+            monthFilter.innerHTML = '<option value="all">Tous les mois</option>';
+            uniqueMonths.sort().forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                monthFilter.appendChild(option);
+            });
+            
+            // Ajouter des écouteurs d'événements pour les filtres
+            schoolFilter.addEventListener('change', applyFilters);
+            monthFilter.addEventListener('change', applyFilters);
+        }
+        
+        // Appliquer les filtres
+        function applyFilters() {
+            const schoolFilter = document.getElementById('schoolFilter').value;
+            const monthFilter = document.getElementById('monthFilter').value;
+            
+            let filteredData = processedData;
+            
+            // Appliquer le filtre d'établissement
+            if (schoolFilter !== 'all') {
+                filteredData = filteredData.filter(row => row.nomEcole === schoolFilter);
+            }
+            
+            // Appliquer le filtre de mois
+            if (monthFilter !== 'all') {
+                filteredData = filteredData.filter(row => row.mois === monthFilter);
+            }
+            
+            // Mettre à jour la table avec les données filtrées
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            
+            filteredData.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                tr.innerHTML = `
+                    <td>${row.ddr || ''}</td>
+                    <td>${row.nom || ''}</td>
+                    <td>${row.prenom || ''}</td>
+                    <td>${row.heures.toFixed(1)}</td>
+                    <td>${row.grade || ''}</td>
+                    <td>${row.nomEcole || ''}</td>
+                    <td>${row.montantBrut.toFixed(2)} DH</td>
+                    <td>${row.dateDebut || ''}</td>
+                `;
+                
+                tableBody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
